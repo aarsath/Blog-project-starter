@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from "axios"
 import Footer from './common/Footer';
 import { auth } from '../config/firebase';
@@ -14,7 +13,7 @@ function Blogs() {
         auth.onAuthStateChanged((user) => 
             {
               if (user) {
-                if(user.uid== 'B7Nx9zrUZJfgoQA9546UKICVNBB3'){
+                if(user.uid === 'B7Nx9zrUZJfgoQA9546UKICVNBB3'){
                     setadmin(true)
                 }else{
                     setadmin(false)

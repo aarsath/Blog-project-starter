@@ -16,7 +16,7 @@ function Login() {
                 navigate('/home');
             }
         });
-    }, []);
+    }, [navigate]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
