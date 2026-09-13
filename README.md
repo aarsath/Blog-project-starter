@@ -1,32 +1,39 @@
 # Blog Project Starter
 
-A full-stack starter template for a blog application, built with React, Node.js/Express, Firebase Authentication, and MongoDB Atlas. The project is split into two parts:
+A full-stack blog web app with a personal portfolio-style homepage, built with **React** on the frontend and **Node.js/Express + MongoDB** on the backend. Users can sign up/log in with **Firebase Authentication**, read blog posts, like them, and — for the designated admin account — create new posts directly from the UI.
 
-- **`blog-project-starter-backend`** — REST API (Node.js + Express) that verifies Firebase-issued auth tokens and handles blog post/comment logic against a MongoDB Atlas database.
-- **`blog-project-starter-frontend`** — React client that uses the Firebase JS SDK for sign up/login and consumes the API to render the blog UI.
+**Live demo:** https://blog-project-starter-live.onrender.com
 
 ## Features
 
-- User authentication via Firebase Authentication (email/password, and optionally Google/other providers)
-- Create, read, update, and delete blog posts stored in MongoDB Atlas
-- Comment on posts
-- REST API separated from the client, so either side can be swapped or redeployed independently
+- 📖 Public blog feed — fetches and displays all posts from MongoDB
+- ❤️ Like button on each post (increments a like counter via the API)
+- 🔐 User sign up / login with Firebase Authentication (email & password)
+- ✍️ Admin-only post creation form (shown only when the logged-in Firebase UID matches the configured admin UID)
+- 🏠 Portfolio-style home page, about, and contact sections
+- 🎨 Styled with Tailwind CSS
 
 ## Tech Stack
 
-| Layer      | Technology                             |
-|------------|------------------------------------------|
-| Frontend   | React, Firebase JS SDK (Auth)            |
-| Backend    | Node.js, Express, Firebase Admin SDK     |
-| Database   | MongoDB Atlas (via Mongoose)             |
-| Auth       | Firebase Authentication                  |
+| Layer      | Technology                                  |
+|------------|----------------------------------------------|
+| Frontend   | React, React Router, Tailwind CSS, Axios      |
+| Auth       | Firebase Authentication (client SDK)          |
+| Backend    | Node.js, Express                              |
+| Database   | MongoDB (via Mongoose)                        |
+
+> Note: Authentication is handled entirely on the frontend via the Firebase client SDK — the backend does **not** verify Firebase tokens. Admin access is currently gated by checking the logged-in user's Firebase UID against a hardcoded value in `Blogs.jsx`. This is fine for a personal/starter project but isn't a secure pattern for production — see [Possible Improvements](#possible-improvements) below.
 
 ## Project Structure
 
 ```
 Blog-project-starter/
-├── blog-project-starter-backend/    # Express API server
-└── blog-project-starter-frontend/   # React client app
+├── blog-project-starter-backend/     # Express API server
+│   └── index.js                      # Routes: GET/POST /api/blogs, PATCH /api/blogs/like/:id
+└── blog-project-starter-frontend/    # React client app
+    └── src/
+        ├── components/               # Home, Blogs, Login, Signup, About, Contact, Navbar, Footer
+        └── config/firebase.js        # Firebase app initialization
 ```
 
 ## Getting Started
@@ -34,9 +41,9 @@ Blog-project-starter/
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+ recommended)
-- npm or yarn
-- A [Firebase project](https://console.firebase.google.com/) with **Authentication** enabled (Email/Password, and any other providers you want)
-- A [MongoDB Atlas](https://www.mongodb.com/atlas) cluster (free tier is fine for development)
+- npm
+- A [MongoDB](https://www.mongodb.com/atlas) database (Atlas free tier works fine)
+- A [Firebase project](https://console.firebase.google.com/) with Email/Password sign-in enabled
 
 ### Clone the repository
 
@@ -45,92 +52,67 @@ git clone https://github.com/aarsath/Blog-project-starter.git
 cd Blog-project-starter
 ```
 
-### 0. Set up Firebase Authentication and MongoDB Atlas
-
-**Firebase (Authentication only):**
-1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project (or use an existing one).
-2. Under **Build > Authentication**, enable the sign-in methods you want (e.g. Email/Password).
-3. Register a **Web app** in Project Settings to get your frontend Firebase config (`apiKey`, `authDomain`, `projectId`, etc.).
-4. Generate a **service account key** (Project Settings > Service Accounts > Generate new private key) so the backend can verify tokens with the Firebase Admin SDK.
-
-**MongoDB Atlas (database):**
-1. Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/atlas).
-2. Under **Database Access**, create a database user with a username/password.
-3. Under **Network Access**, allow your IP (or `0.0.0.0/0` for local dev).
-4. Grab your connection string from **Connect > Drivers** — it looks like `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>`.
-
-### 1. Set up the backend
+### 1. Backend setup
 
 ```bash
 cd blog-project-starter-backend
 npm install
 ```
 
-Create a `.env` file in the backend folder with your configuration, e.g.:
+Create a `.env` file in this folder:
 
 ```
 PORT=5000
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_CLIENT_EMAIL=your-service-account-client-email
-FIREBASE_PRIVATE_KEY=your-service-account-private-key
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<dbname>
 ```
 
-The backend uses [Mongoose](https://mongoosejs.com/) to connect to MongoDB Atlas for data storage, and the [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup) to verify ID tokens sent by the frontend.
-
-Start the backend server:
+Start the server:
 
 ```bash
 npm start
 ```
 
-The API should now be running at `http://localhost:5000` (or whichever port you configured).
+The API will run at `http://localhost:5000` with these endpoints:
 
-### 2. Set up the frontend
+| Method | Endpoint                    | Description                  |
+|--------|------------------------------|-------------------------------|
+| GET    | `/api/blogs`                 | Fetch all blog posts          |
+| POST   | `/api/blogs`                 | Create a new blog post        |
+| PATCH  | `/api/blogs/like/:id`        | Increment a post's like count |
 
-Open a new terminal window:
+### 2. Frontend setup
+
+Open a new terminal:
 
 ```bash
 cd blog-project-starter-frontend
 npm install
 ```
 
-Add your Firebase web app config to a `.env` file:
+Set your API URL (optional — defaults to the deployed backend if omitted):
 
 ```
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-REACT_APP_FIREBASE_APP_ID=your-app-id
 REACT_APP_API_URL=http://localhost:5000
 ```
 
-Start the frontend development server:
+Update `src/config/firebase.js` with your own Firebase project config (apiKey, authDomain, projectId, etc.) if you're deploying your own instance, and update the admin UID check in `src/components/Blogs.jsx` to match your own Firebase user UID.
+
+Start the app:
 
 ```bash
 npm start
 ```
 
-The app should now be running at `http://localhost:3000`.
+The app will run at `http://localhost:3000`.
 
-## Running Both Together
+## Possible Improvements
 
-Make sure the backend is running before starting the frontend, since the client depends on the API for data.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a pull request
+- Verify Firebase ID tokens on the backend (via Firebase Admin SDK) instead of trusting the frontend for admin checks
+- Move the admin UID and Firebase config out of source code and into environment variables
+- Add edit/delete endpoints for blog posts
+- Add pagination for the blog feed
+- Add a `.env.example` file for both frontend and backend
 
 ## License
 
 No license specified yet — consider adding one (e.g. MIT) if this project is meant to be reused by others.
-
----
-
-**Note:** This README was generated based on the visible repository structure. Update the environment variable names, ports, and scripts above to match the actual `package.json` files and configuration in the backend and frontend folders. Also make sure your MongoDB Atlas **Network Access** and database user credentials are locked down before deploying, and never commit your `.env` file or Firebase service account key to version control.
